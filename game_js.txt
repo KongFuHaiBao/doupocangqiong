@@ -1,0 +1,1249 @@
+﻿
+// ==================== 游戏数据 ====================
+
+const REGIONS = ['乌坦城','魔兽山脉','塔戈尔大沙漠','加玛帝国帝都','黑角域','迦南学院','出云帝国','中州','天暮山与古界','终章·双帝之战'];
+const REGION_SSR_POOLS = {}; // {regionIndex: [charIds]}
+const ELEMENTS = {fire:'火',wind:'风',ice:'冰',poison:'毒',thunder:'雷',wood:'木',earth:'土',dark:'暗',light:'光'};
+const RARITY_COLORS = {N:'#4a90d9',R:'#9b59b6',SR:'#e2b04a',SSR:'#ff6b6b'};
+const RARITY_STAR_POWER = {N:10,R:12,SR:12,SSR:15};
+const RARITY_DUPE_GOLD = {N:5,R:20,SR:50,SSR:200};
+const GACHA_PROBS = {N:0.50,R:0.38,SR:0.10,SSR:0.02};
+const PITY_SR = 10;
+const PITY_SSR = 100;
+const SINGLE_COST = 100;
+const TEN_COST = 900;
+const MAX_IDLE_HOURS = 12;
+
+// ==================== 关卡数据 (210关) ====================
+function generateStages(){
+  const stages=[];
+  const config=[
+    {r:0,rn:'乌坦城',count:20,basePow:50,baseGold:30,increment:15},
+    {r:1,rn:'魔兽山脉',count:20,basePow:300,baseGold:60,increment:30},
+    {r:2,rn:'塔戈尔大沙漠',count:25,basePow:800,baseGold:100,increment:40},
+    {r:3,rn:'加玛帝国帝都',count:25,basePow:2000,baseGold:150,increment:60},
+    {r:4,rn:'黑角域',count:20,basePow:5000,baseGold:220,increment:80},
+    {r:5,rn:'迦南学院',count:25,basePow:10000,baseGold:300,increment:120},
+    {r:6,rn:'出云帝国',count:20,basePow:25000,baseGold:400,increment:180},
+    {r:7,rn:'中州',count:30,basePow:50000,baseGold:550,increment:250},
+    {r:8,rn:'天暮山与古界',count:15,basePow:150000,baseGold:800,increment:500},
+    {r:9,rn:'终章·双帝之战',count:10,basePow:400000,baseGold:1200,increment:800}
+  ];
+  let sid=0, stageNum=1;
+  const bossNames={
+    0:['斗之力三段','成人仪式','加列家族','萧家反击','斗者回归','炼药初窥','凝血散','萧家坊市','八极崩','初战大斗师',
+       '聚气散','炼药突破','家族商战','一星斗者','离开乌坦城','青山镇','万药斋','小医仙','山洞探宝','告别',''],
+    1:['进入山脉','紫云翼','焰分噬浪尺','瀑布苦修','狼头佣兵团','击杀穆蛇','六星斗者','云芝相遇','山洞疗伤','紫晶狮王',
+       '伴生紫晶源','紫火炼化','八星斗者','九星斗者','厄难毒体','小山谷','斗师突破','飞行斗技','告别小医仙','黑岩城',''],
+    2:['沙漠边境','蛇人初遇','漠铁佣兵团','沙之佣兵团','青鳞','异火线索','石漠城','探测地形','蛇人圣城','美杜莎女王',
+       '异火进化','七彩吞天蟒','青莲地心火','吞噬异火','焚决进化','冰皇海波东','沙漠逃亡','加玛边境','回归帝都','炼药师公会',
+       '冰灵寒泉','二品炼药师','极寒考验','天火三玄变','沙漠苦修',''],
+    3:['抵达帝都','炼药师大会','大会预选','炎利阴谋','三纹青灵丹','大会冠军','大斗师突破','各方云动','纳兰家族','三年之约',
+       '云岚宗','萧炎vs纳兰','风之极落日耀','佛怒火莲','胜！','云棱拦路','云烟覆日阵','云山','美杜莎现身','全身而退',
+       '萧家变故','萧战失踪','举族迁移','血洗加列','再上云岚宗',''],
+    4:['黑域大平原','黑风暴','黑印城','拍卖会','雷蝠天翼','三千雷动','阴阳玄龙丹','截杀范凌','吞服龙丹','和平镇',
+       '迦南执法队','学院城','黑角域深处','药皇韩枫','魔炎谷','黑皇城','八扇门','血宗','地魔老鬼','萧门初建',''],
+    5:['迦南外院','选拔赛','内院资格','火能猎捕赛','青火晶卡','磐门','天焚炼气塔','陨落心炎','韩枫来袭','地底绝境',
+       '一年沉睡','斗王突破','吞噬心炎','琉璃莲心火','美杜莎','破塔而出','强榜大赛','林修崖','柳擎','薰儿离去',
+       '帝印决','药老苏醒','噬生丹','枫城之战','击杀韩枫',''],
+    6:['毒宗入侵','三国联军','黑山要塞','慕兰三老','小医仙现身','天毒女','停战协议','暗杀雁落天','深入出云','万蝎门',
+       '蝎毕岩','铁护法','魔毒斑','封印毒斑','魂殿情报','二星斗皇','赶回加玛','炎盟','宗门大会','出云平定',''],
+    7:['空间虫洞','中州天北城','韩家','风雷阁','洪家围剿','三千雷幻身','击杀沈云','九天雷狱阵','天山血潭','突破斗宗',
+       '焚炎谷','九龙雷罡火','天火三玄变完整','丹域','圣丹城','丹会','三千焱炎火','星域','魂殿分殿','亡魂山脉',
+       '营救药老','摘星老鬼','四色火莲','黑白天尊','铁剑陨落','星陨阁','远古遗迹','天阶斗技','太虚古龙','龙凰本源果',''],
+    8:['远古八族','古界开启','天墓修炼','萧玄传承','菩提古树','菩提三宝','斗圣突破','天府联盟','九幽地冥蟒','黄泉妖圣',
+       '净莲妖火降世','妖火幻境','炼化妖火','薰儿双修','五星斗圣','药族药典','','','','',''],
+    9:['魂殿决战','药族覆灭','虚无吞炎','三族联盟','葬天山脉','古帝洞府','烛坤','帝品雏丹','魂天帝成帝','双帝之战',
+       '异火恒古尺','斩帝阵','封印魂天帝','炎帝','五帝破空','','','','','','']
+  };
+  const finalBossNames={0:'击败加列家族',1:'击杀穆蛇',2:'收服青莲地心火',3:'击败纳兰嫣然',4:'萧门建立',5:'击杀韩枫',6:'平定出云',7:'天阶斗技到手',8:'炼化净莲妖火',9:'五帝破空'};
+  const bossChapterNames={
+    0:['云岚宗退婚','成人仪式','加列家族反击','萧家反击','斗者回归','药老现世','凝血散问世','坊市争夺','八极崩修炼','对战加列怒',
+       '炼制聚气散','炼药术突破','商战决胜','成人仪式夺冠','离开乌坦城','抵达青山镇','万药斋','结识小医仙','悬崖秘洞','分别'],
+    1:['魔兽山脉','获得紫云翼','修炼焰分噬浪尺','瀑布苦修','报复狼头佣兵团','击杀穆蛇团长','突破六星','相遇云芝','山洞疗伤','紫晶翼狮王',
+       '伴生紫晶源','炼化紫火','八星斗者','九星斗者','厄难毒体觉醒','小山谷潜修','晋阶斗师','试飞紫云翼','告别小医仙','黑岩城炼药考核'],
+    2:['沙漠边境','初遇蛇人','漠铁佣兵团','收服沙之佣兵团','碧蛇三花瞳','探寻异火','石漠城整顿','探测蛇人圣城','潜入圣城','美杜莎女王进化',
+       '异火灼烧','七彩吞天蟒认主','发现青莲地心火','吞噬异火','焚决进化','冰皇海波东','千里逃亡','抵达加玛边境','返回帝都','炼药师公会考核',
+       '冰灵寒泉到手','最年轻二品炼药师','冰灵寒泉考验','天火三玄变初现','沙漠苦修完成'],
+    3:['抵达加玛帝都','炼药师大会开幕','大会预选赛','揭穿炎利','炼制三纹青灵丹','夺得大会冠军','突破大斗师','帝都风云','纳兰家族会面','三年之约决战',
+       '独上云岚宗','萧炎vs纳兰嫣然','风之极·落日耀','佛怒火莲初显','萧炎获胜','云棱阻拦','云烟覆日阵围攻','云山现身','美杜莎女王出手','全身而退',
+       '萧家惨遭袭击','萧战引敌失踪','举族迁往石漠城','血洗加列奥巴','再上云岚宗复仇'],
+    4:['黑域大平原','黑风暴中前行','黑印城','八扇门拍卖会','获得雷蝠天翼','地阶身法三千雷动','七品阴阳玄龙丹','截杀血宗范凌','吞服玄龙丹','和平镇',
+       '迦南执法队','迦南城','黑角域深处','药皇韩枫','魔炎谷现身','黑皇城','八扇门总部','血宗范痨','地魔老鬼来袭','萧门初建'],
+    5:['迦南学院外院','内院选拔赛','获得内院资格','火能猎捕赛大胜','青火晶卡奖励','创立磐门','天焚炼气塔修炼','陨落心炎暴动','韩枫来袭','地底岩浆绝境',
+       '沉睡一年','突破斗王','吞噬陨落心炎','琉璃莲心火融合','美杜莎女王','破塔而出','强榜大赛','对战林修崖','对战柳擎','薰儿被带走',
+       '帝印决修炼','药老苏醒','噬生丹之秘','枫城决战','击杀韩枫清理门户'],
+    6:['毒宗入侵','三国联军压境','黑山要塞保卫战','对战慕兰三老','小医仙现身','天毒女身份','说服小医仙停战','暗杀雁落天','深入出云帝国','万蝎门大战',
+       '蝎毕岩','魂殿铁护法','中魔毒斑','封印魔毒斑','获得魂殿情报','突破二星斗皇','赶回加玛帝国','建立炎盟','宗门大会','出云帝国平定'],
+    7:['穿越空间虫洞','抵达中州天北城','结识韩家','风雷阁冲突','洪家围剿','三千雷幻身','击杀沈云','大破九天雷狱阵','天山血潭修炼','突破斗宗',
+       '焚炎谷','九龙雷罡火','获得完整天火三玄变','丹域','圣丹城','丹会','三千焱炎火','星域收服','魂殿分殿','亡魂山脉',
+       '营救药老','对战摘星老鬼','四色毁灭火莲','黑白天尊降临','铁剑尊者陨落','星陨阁','远古遗迹','天阶斗技大天造化掌','太虚古龙黑擎','龙凰本源果'],
+    8:['远古八族揭秘','古界开启','天墓修炼三年','萧玄传承换血','菩提古树出世','菩提三宝','突破斗圣','天府联盟成立','九幽地冥蟒族','黄泉妖圣传承',
+       '净莲妖火降世','妖火梦魇天雾','炼化净莲妖火','与薰儿双修','突破五星斗圣','药族药典','古族会议','灵族消失','石族消失','魂族阴谋'],
+    9:['魂殿总决战','药族覆灭','虚无吞炎本体','三族联盟','葬天山脉大战','古帝洞府开启','烛坤龙皇','帝品雏丹争夺','魂天帝炼化成帝','双帝之战',
+       '异火恒古尺','斩帝鬼血刃','封印魂天帝千载万世','炎帝萧炎','五帝破空飞升']
+  };
+  for(let c of config){
+    for(let i=0;i<c.count;i++){
+      let type='normal', powMult=1, goldMult=1;
+      const pos=i/(c.count-1);
+      if(i===c.count-1) {type='final';powMult=4;goldMult=4;}
+      else if(i===Math.floor(c.count/2)||i===Math.floor(c.count*0.3)||i===Math.floor(c.count*0.7)) {type='boss';powMult=2;goldMult=3;}
+      stages.push({
+        id:sid,region:c.r,regionName:c.rn,stageNumber:i+1,
+        name:(bossChapterNames[c.r]&&bossChapterNames[c.r][i])||(c.rn+'第'+(i+1)+'战'),
+        type,powerThreshold:Math.floor(c.basePow+c.increment*i*powMult)*Math.pow(1.25,c.r),
+        goldReward:Math.floor(c.baseGold+goldMult*c.baseGold*i*0.5)*Math.pow(1.2,c.r),
+        drops:[],unlockRecipe:null,description:bossChapterNames[c.r]?bossChapterNames[c.r][i]||'':''});
+      sid++;
+    }
+  }
+  return stages;
+}
+
+const ALL_STAGES = generateStages();
+
+// ==================== 角色数据 ====================
+function generateCharacters(){
+  const chars=[];
+  // SSR - 区域0:乌坦城
+  chars.push({id:'xy_wutan',name:'萧炎',rarity:'SSR',region:0,element:'fire',basePower:150,description:'萧家三少爷，从天才陨落到重新崛起。掌控青莲地心火与骨灵冷火。',isXiaoYan:true,regionVersion:0});
+  chars.push({id:'xuner_0',name:'萧薰儿',rarity:'SSR',region:0,element:'fire',basePower:160,description:'古族千金，从小寄养在萧家。拥有金帝焚天炎（异火榜第四），一直默默守护着萧炎。'});
+  chars.push({id:'yaolao_0',name:'药老(灵魂体)',rarity:'SSR',region:0,element:'fire',basePower:200,description:'八品炼药师灵魂体，萧炎的老师。拥有骨灵冷火（异火榜第十一），因魂殿迫害而寄居戒指中。'});
+  chars.push({id:'yunzhi_0',name:'云芝(云韵)',rarity:'SSR',region:0,element:'wind',basePower:170,description:'云岚宗宗主，三星斗皇。在魔兽山脉与萧炎山洞相遇，留下海之心甲。'});
+  chars.push({id:'xiao_yixian_0',name:'小医仙',rarity:'SSR',region:0,element:'poison',basePower:120,description:'万药斋医师，后被发现是厄难毒体。与萧炎在魔兽山脉结识，命运多舛。'});
+  // SSR - 区域1:魔兽山脉
+  chars.push({id:'xy_mountains',name:'萧炎·魔兽山脉',rarity:'SSR',region:1,element:'fire',basePower:280,description:'在魔兽山脉苦修后的萧炎。掌握焰分噬浪尺（地阶低级），获得紫云翼。',isXiaoYan:true,regionVersion:1});
+  chars.push({id:'yunyun',name:'云韵',rarity:'SSR',region:1,element:'wind',basePower:320,description:'云岚宗宗主，三星斗皇。被紫晶翼狮王封印后与萧炎在山洞共处，两人产生微妙情愫。'});
+  chars.push({id:'zi_jing_shi',name:'紫晶翼狮王',rarity:'SSR',region:1,element:'fire',basePower:300,description:'六阶魔兽，魔兽山脉东部霸主。拥有伴生紫晶源，被云韵和萧炎联手对付。'});
+  chars.push({id:'xiao_yixian_1',name:'小医仙·厄难',rarity:'SSR',region:1,element:'poison',basePower:250,description:'厄难毒体觉醒后的小医仙。吞毒即可增长实力，但毒力累积终将万毒噬身。'});
+  chars.push({id:'mu_she',name:'穆蛇',rarity:'SSR',region:1,element:'earth',basePower:200,description:'狼头佣兵团团长，二星斗师。在魔兽山脉中被萧炎以焰分噬浪尺击杀。'});
+  // SSR - 区域2:塔戈尔沙漠
+  chars.push({id:'xy_desert',name:'萧炎·沙漠',rarity:'SSR',region:2,element:'fire',basePower:450,description:'吞噬青莲地心火后的萧炎。焚决进化为黄阶高级，炼药术突破至三品。',isXiaoYan:true,regionVersion:2});
+  chars.push({id:'medusa_2',name:'美杜莎女王',rarity:'SSR',region:2,element:'ice',basePower:500,description:'蛇人族女王，斗皇巅峰强者。以青莲地心火进化后化为七彩吞天蟒。'});
+  chars.push({id:'haibodong',name:'海波东(冰皇)',rarity:'SSR',region:2,element:'ice',basePower:420,description:'前一代加玛帝国十大强者，斗皇。被美杜莎封印后隐居沙漠，被萧炎所救。'});
+  chars.push({id:'qinglin',name:'青鳞',rarity:'SSR',region:2,element:'dark',basePower:200,description:'拥有碧蛇三花瞳的少女，能控制蛇类魔兽。后被天蛇府强者掳走。'});
+  chars.push({id:'guhe_2',name:'丹王古河',rarity:'SSR',region:2,element:'fire',basePower:430,description:'加玛帝国第一炼药师，六品。率队前往沙漠寻找异火，与萧炎多次交集。'});
+  // SSR - 区域3:帝都
+  chars.push({id:'xy_capital',name:'萧炎·帝都',rarity:'SSR',region:3,element:'fire',basePower:700,description:'炼药师大会冠军，大斗师。上云岚宗履行三年之约，击败纳兰嫣然。',isXiaoYan:true,regionVersion:3});
+  chars.push({id:'nalan',name:'纳兰嫣然',rarity:'SSR',region:3,element:'wind',basePower:620,description:'云岚宗少宗主，萧炎前未婚妻。三年之约中被萧炎击败，心生悔悟。'});
+  chars.push({id:'yunshan',name:'云山',rarity:'SSR',region:3,element:'wind',basePower:750,description:'云岚宗上任宗主，斗宗强者。被魂殿利用，成为萧炎的头号大敌。'});
+  chars.push({id:'fama',name:'法犸',rarity:'SSR',region:3,element:'fire',basePower:400,description:'加玛帝国炼药师公会会长，五品炼药师。年轻时被药老点拨，对萧炎推崇备至。'});
+  chars.push({id:'jiaxingtian',name:'加刑天',rarity:'SSR',region:3,element:'thunder',basePower:600,description:'加玛帝国皇室守护者，斗皇巅峰。拥有幽海蛟兽作为皇室守护兽。'});
+  chars.push({id:'ya_fei',name:'雅妃',rarity:'SSR',region:3,element:'wood',basePower:300,description:'米特尔拍卖场首席拍卖师。多次帮助萧炎，是萧炎在加玛帝国最信任的盟友之一。'});
+  // SSR - 区域4:黑角域
+  chars.push({id:'xy_black',name:'萧炎·黑角域',rarity:'SSR',region:4,element:'fire',basePower:1200,description:'深入黑角域的萧炎。获得阴阳玄龙丹和三千雷动后实力大涨。',isXiaoYan:true,regionVersion:4});
+  chars.push({id:'hanfeng',name:'药皇韩枫',rarity:'SSR',region:4,element:'fire',basePower:1400,description:'黑榜第三，六品炼药师，斗皇巅峰。药老的叛徒弟子，拥有海心焰（异火榜第十五）。'});
+  chars.push({id:'fanlao',name:'范痨',rarity:'SSR',region:4,element:'dark',basePower:1100,description:'血宗宗主，斗皇。因儿子范凌被萧炎击杀而结下死仇。'});
+  chars.push({id:'yinxuan',name:'鹰山老人',rarity:'SSR',region:4,element:'wind',basePower:1300,description:'四星斗宗，黑角域独行强者。在菩提化体涎争夺中与萧炎交锋。'});
+  chars.push({id:'motianxing',name:'莫天行',rarity:'SSR',region:4,element:'thunder',basePower:1250,description:'黑皇宗宗主，斗宗强者。黑皇城拍卖会的主办者。'});
+  // SSR - 区域5:迦南学院
+  chars.push({id:'xy_canaan',name:'萧炎·迦南',rarity:'SSR',region:5,element:'fire',basePower:2500,description:'在迦南学院修炼的萧炎。吞噬陨落心炎后融合出琉璃莲心火，突破至斗王。',isXiaoYan:true,regionVersion:5});
+  chars.push({id:'ziyan',name:'紫研',rarity:'SSR',region:5,element:'earth',basePower:2800,description:'太古虚龙皇，迦南学院强榜第一的蛮力王。外表为白发紫眸小女孩，拥有恐怖怪力。'});
+  chars.push({id:'suqian',name:'苏千',rarity:'SSR',region:5,element:'fire',basePower:2000,description:'迦南学院内院大长老，斗宗。主持天焚炼气塔和强榜大赛。'});
+  chars.push({id:'linxiuya',name:'林修崖',rarity:'SSR',region:5,element:'wind',basePower:1500,description:'迦南学院强榜高手，内院顶尖学员。被萧炎一掌击败。'});
+  chars.push({id:'liuqing',name:'柳擎(霸枪)',rarity:'SSR',region:5,element:'earth',basePower:1600,description:'迦南学院强榜前十，霸枪。在强榜大赛中与萧炎打成平手。'});
+  // SSR - 区域6:出云帝国
+  chars.push({id:'xy_chuyun',name:'萧炎·出云',rarity:'SSR',region:6,element:'fire',basePower:4500,description:'平定加玛帝国内乱后的萧炎。突破至斗皇，创下炎盟，击杀云山。',isXiaoYan:true,regionVersion:6});
+  chars.push({id:'xiao_yixian_6',name:'小医仙·天毒女',rarity:'SSR',region:6,element:'poison',basePower:5000,description:'毒宗宗主，厄难毒体失控后化为天毒女。被萧炎以三种异火控制毒体后重新成为盟友。'});
+  chars.push({id:'xie_biyan',name:'蝎毕岩',rarity:'SSR',region:6,element:'poison',basePower:4800,description:'万蝎门门主，四翼天魔蝎。被小医仙解开厄难毒体封印后击杀。'});
+  chars.push({id:'tie_hufa',name:'铁护法',rarity:'SSR',region:6,element:'dark',basePower:4300,description:'魂殿护法。被萧炎以翻海印重伤后擒获，拷问出魂殿情报。'});
+  // SSR - 区域7:中州
+  chars.push({id:'xy_zhongzhou',name:'萧炎·中州',rarity:'SSR',region:7,element:'fire',basePower:12000,description:'进入中州的萧炎。通过丹会获得三千焱炎火，突破至斗宗。',isXiaoYan:true,regionVersion:7});
+  chars.push({id:'feng_zunzhe',name:'风尊者',rarity:'SSR',region:7,element:'wind',basePower:15000,description:'星陨阁副阁主，药老生死至交。四星斗尊。'});
+  chars.push({id:'tianhuo',name:'天火尊者',rarity:'SSR',region:7,element:'fire',basePower:11000,description:'远古斗尊灵魂，传授萧炎五轮离火法。后获得新生躯体。'});
+  chars.push({id:'tangzhen',name:'唐震',rarity:'SSR',region:7,element:'fire',basePower:14000,description:'焚炎谷谷主，五星斗尊。拥有九龙雷罡火（异火榜第十二）。'});
+  chars.push({id:'feng_qinger',name:'凤清儿',rarity:'SSR',region:7,element:'wind',basePower:10000,description:'风雷阁首席弟子，天妖凰族族人。在四方阁大会上被萧炎击败。'});
+  chars.push({id:'zhai_xing',name:'摘星老鬼',rarity:'SSR',region:7,element:'dark',basePower:13500,description:'魂殿天尊，五星巅峰斗尊。在亡魂山脉被萧炎四色火莲炸断左臂。'});
+  // SSR - 区域8:天暮山与古界
+  chars.push({id:'xy_ancient',name:'萧炎·远古',rarity:'SSR',region:8,element:'fire',basePower:35000,description:'在天墓中获得萧玄传承后的萧炎。血脉进化，激活萧族族纹。',isXiaoYan:true,regionVersion:8});
+  chars.push({id:'xiaoxuan',name:'萧玄',rarity:'SSR',region:8,element:'fire',basePower:50000,description:'萧族先祖，千年前的斗圣巅峰强者。在天墓第三层将最后血脉传承给萧炎。'});
+  chars.push({id:'guyuan',name:'古元',rarity:'SSR',region:8,element:'fire',basePower:48000,description:'古族族长，九星斗圣。薰儿的父亲，远古八族最强者之一。'});
+  chars.push({id:'hundi',name:'魂天帝',rarity:'SSR',region:8,element:'dark',basePower:50000,description:'魂族族长，千年阴谋的幕后黑手。集齐陀舍古帝玉碎片，欲图成就斗帝。'});
+  chars.push({id:'xuwu',name:'虚无吞炎',rarity:'SSR',region:8,element:'dark',basePower:48000,description:'异火榜第二，九星斗圣。化为人形后成为魂族最强盟友。'});
+  // SSR - 区域9:终章
+  chars.push({id:'xy_final',name:'萧炎·炎帝',rarity:'SSR',region:9,element:'fire',basePower:80000,description:'获得陀舍古帝传承后成就斗帝的萧炎。掌控万火，号为炎帝。',isXiaoYan:true,regionVersion:9});
+  chars.push({id:'hundi_god',name:'魂天帝·斗帝',rarity:'SSR',region:9,element:'dark',basePower:80000,description:'以中州亿万生灵为祭炼化成帝。最终被萧炎以异火恒古尺击败，封印千载万世。'});
+  chars.push({id:'zhukun',name:'烛坤',rarity:'SSR',region:9,element:'earth',basePower:70000,description:'太虚古龙一族失踪数千年的老龙皇，九星斗圣后期。紫研的亲生父亲。'});
+  chars.push({id:'xuner_final',name:'萧薰儿·斗帝',rarity:'SSR',region:9,element:'fire',basePower:75000,description:'借助源气突破至斗帝，随萧炎一同飞升大千世界。'});
+  chars.push({id:'cailin_final',name:'彩鳞·斗帝',rarity:'SSR',region:9,element:'ice',basePower:75000,description:'借助源气突破至斗帝，萧潇的母亲，随萧炎飞升大千世界。'});
+  // SR卡
+  const srNames=[['萧战','加列奥','萧玉','萧媚','萧宁','若琳','奥托','弗兰克'],
+    ['甘慕','赫蒙','穆力','雪岚','丹仔','狮王随从','蓝鹰'],
+    ['月媚','墨巴斯','青长老','范凌','林菱','沙铁','罗侯'],
+    ['古河随从','云棱','云督','云刹','木辰','米切尔','夭夜','柳翎'],
+    ['金银二老','方言','方炎','琥嘉','吴昊','白山','韩月','韩闲'],
+    ['白程','付敖','姚盛','雷纳','柳菲','林焱','严皓'],
+    ['云帆','蒙力','慕兰三老','雁落天','蜈崖','幽海蛟兽'],
+    ['沈云','费天','洪天啸','慕青鸾','唐火儿','金石','曹颖','丹晨'],
+    ['青海尊者','骨幽圣者','九天尊','妖花邪君','北龙王','南龙王','西龙王','妖暝'],
+    ['古道','魂灭生','魂千陌','药丹','魂虚子','萧晨','丹塔老祖']];
+  for(let r=0;r<10;r++){
+    if(srNames[r]) srNames[r].forEach((n,i)=>{chars.push({id:'sr_'+r+'_'+i,name:n,rarity:'SR',region:r,element:Object.keys(ELEMENTS)[i%9],basePower:Math.floor([80,200,400,600,1000,1800,3000,6000,15000,30000][r]*(0.7+Math.random()*0.3)),description:'',isXiaoYan:false,regionVersion:-1});});
+  }
+  // R卡 (每区域3张)
+  for(let r=0;r<10;r++){
+    for(let j=0;j<3;j++){chars.push({id:'r_'+r+'_'+j,name:['佣兵','蛇人战士','炼药师学徒','云岚弟子','黑角域杀手','内院学员','毒宗弟子','阁中弟子','古族青年','联军战士'][r]+(j+1),rarity:'R',region:r,element:Object.keys(ELEMENTS)[(r+j)%9],basePower:Math.floor([50,120,200,350,500,800,1500,3000,7000,15000][r]*0.7),description:'',isXiaoYan:false,regionVersion:-1})}
+  }
+  // N卡 (每区域5张)
+  for(let r=0;r<10;r++){
+    for(let j=0;j<5;j++){chars.push({id:'n_'+r+'_'+j,name:['萧家子弟','冒险者','沙漠旅人','帝都平民','黑角流民','外院新生','帝国士兵','中州散修','远古族裔','中州幸存者'][r]+(j+1),rarity:'N',region:r,element:Object.keys(ELEMENTS)[(r*5+j)%8],basePower:Math.floor([20,50,80,120,180,300,500,1000,2500,5000][r]*0.6),description:'',isXiaoYan:false,regionVersion:-1})}
+  }
+  // 构建SSR池索引
+  chars.filter(c=>c.rarity==='SSR').forEach(c=>{
+    if(!REGION_SSR_POOLS[c.region]) REGION_SSR_POOLS[c.region]=[];
+    REGION_SSR_POOLS[c.region].push(c.id);
+  });
+  return chars;
+}
+
+const ALL_CHARACTERS = generateCharacters();
+
+// ==================== 斗技数据 ====================
+const ALL_TECHNIQUES = [
+  {id:'t_01',name:'八极崩',element:'fire',grade:'玄阶高级',basePower:60,sourceStage:'第18章',description:'玄阶高级斗技，暗含八重劲气。炼至大成可媲美地阶低级斗技。'},
+  {id:'t_02',name:'焰分噬浪尺',element:'fire',grade:'地阶低级',basePower:150,sourceStage:'第122章',description:'地阶低级斗技，药老传授。以玄重尺配合施展，威力绝伦。'},
+  {id:'t_03',name:'吸掌',element:'wind',grade:'玄阶低级',basePower:30,sourceStage:'第28章',description:'玄阶低级斗技，可吸取远处物品。'},
+  {id:'t_04',name:'吹火掌',element:'fire',grade:'玄阶低级',basePower:35,sourceStage:'第28章',description:'玄阶低级斗技，与吸掌配合使用威力更佳。'},
+  {id:'t_05',name:'狮虎碎金吟',element:'wind',grade:'玄阶高级',basePower:80,sourceStage:'第404章',description:'玄阶高级声波斗技，蕴含龙气虎啸，震慑灵魂。'},
+  {id:'t_06',name:'三千雷动',element:'thunder',grade:'地阶低级',basePower:180,sourceStage:'第364章',description:'地阶低级身法斗技，三层境界：雷闪→雷瞬→三千雷。'},
+  {id:'t_07',name:'帝印决',element:'earth',grade:'地阶高级',basePower:400,sourceStage:'第617章',description:'地阶高级斗技，远古斗帝所创。五印：开山、翻海、覆地、湮天、古帝。'},
+  {id:'t_08',name:'五轮离火法',element:'fire',grade:'地阶中级',basePower:300,sourceStage:'第879章',description:'地阶中级控火法诀，天火尊者传授。需五种火焰方可大成。'},
+  {id:'t_09',name:'六合游身尺',element:'earth',grade:'地阶中级',basePower:250,sourceStage:'第817章',description:'地阶中级尺法斗技，在黑皇城拍卖会所得。'},
+  {id:'t_10',name:'大天造化掌',element:'earth',grade:'天阶低级',basePower:800,sourceStage:'第1247章',description:'天阶低级斗技，造化圣者所创。一掌之下可化虚无。'},
+  {id:'t_11',name:'黄泉天怒',element:'dark',grade:'天阶高级',basePower:1200,sourceStage:'第1440章',description:'天阶高级音波斗技，黄泉妖圣绝学。一声怒吼可碎灵魂。'},
+  {id:'t_12',name:'佛怒火莲',element:'fire',grade:'自创',basePower:600,sourceStage:'第340章',description:'萧炎自创，融合多种异火而成。异火越多威力越大。'},
+  {id:'t_13',name:'风之极·落日耀',element:'wind',grade:'玄阶高级',basePower:90,sourceStage:'第338章',description:'云岚宗风属性绝技，纳兰嫣然在三年之约中使用。'},
+  {id:'t_14',name:'天火三玄变',element:'fire',grade:'秘法',basePower:350,sourceStage:'第370章',description:'焚炎谷镇谷秘法。三变：青莲变→琉璃变→萧族变。'},
+  {id:'t_15',name:'金刚琉璃身',element:'earth',grade:'地阶高级',basePower:380,sourceStage:'第1387章',description:'地阶高级炼体斗技，修炼至巅峰可达九丈九尺。'},
+  {id:'t_16',name:'大裂劈棺爪',element:'dark',grade:'玄阶高级',basePower:85,sourceStage:'第536章',description:'柳擎的玄阶高级斗技，爪法刚猛霸道。'},
+  {id:'t_17',name:'海心焰',element:'fire',grade:'异火',basePower:450,sourceStage:'第571章',description:'异火榜第十五，韩枫的本命异火。海水之中亦可熊熊燃烧。'},
+  {id:'t_18',name:'骨灵冷火',element:'ice',grade:'异火',basePower:500,sourceStage:'第608章',description:'异火榜第十一，药老的本命异火。极寒与极热并存。'},
+];
+
+// ==================== 丹方数据 ====================
+const ALL_RECIPES = [
+  {id:'rec_01',name:'凝血散',herbs:[{name:'凝血草',qty:3},{name:'活气果',qty:1}],pillPower:20,unlockStage:5,sellPrice:80,description:'一品疗伤丹药，可止血生肌。'},
+  {id:'rec_02',name:'聚气散',herbs:[{name:'聚灵草',qty:5},{name:'活气果',qty:2},{name:'凝血草',qty:3}],pillPower:50,unlockStage:25,sellPrice:200,description:'三品丹药，助斗者凝聚斗之气旋。'},
+  {id:'rec_03',name:'筑基灵液',herbs:[{name:'紫叶兰草',qty:3},{name:'洗骨花',qty:2},{name:'木系魔核(一阶)',qty:1}],pillPower:30,unlockStage:10,sellPrice:100,description:'药老特制灵液，淬炼根骨强化经脉。'},
+  {id:'rec_04',name:'三纹青灵丹',herbs:[{name:'青灵草',qty:8},{name:'火系魔核(四阶)',qty:1},{name:'冰灵寒泉',qty:1}],pillPower:150,unlockStage:75,sellPrice:2000,description:'四品丹药，可助大斗师突破瓶颈。'},
+  {id:'rec_05',name:'血莲丹',herbs:[{name:'血莲精',qty:1},{name:'冰灵焰草',qty:1},{name:'火系魔核(四阶)',qty:1}],pillPower:200,unlockStage:55,sellPrice:3000,description:'五品丹药，吞噬异火必备的防护丹药。'},
+  {id:'rec_06',name:'龙力丹',herbs:[{name:'龙血草',qty:5},{name:'火系魔核(六阶)',qty:1},{name:'青木仙藤',qty:3}],pillPower:180,unlockStage:135,sellPrice:1800,description:'五品丹药，短时间内大幅提升肉体力量。'},
+  {id:'rec_07',name:'复紫灵丹',herbs:[{name:'紫灵草',qty:6},{name:'木系魔核(五阶)',qty:1}],pillPower:160,unlockStage:115,sellPrice:1500,description:'五品丹药，恢复被封印的实力。海波东以此恢复至斗皇。'},
+  {id:'rec_08',name:'皇极丹',herbs:[{name:'皇血草',qty:10},{name:'火系魔核(六阶)',qty:1},{name:'地心火芝',qty:3}],pillPower:350,unlockStage:155,sellPrice:5000,description:'六品丹药，可助斗皇强者提升一至两星实力。'},
+  {id:'rec_09',name:'地灵丹',herbs:[{name:'地心火芝',qty:1},{name:'龙须冰火果',qty:1},{name:'水系魔核(六阶)',qty:1}],pillPower:300,unlockStage:130,sellPrice:4000,description:'六品丹药，吞噬陨落心炎时使用。'},
+  {id:'rec_10',name:'生骨融血丹',herbs:[{name:'万年青灵藤',qty:1},{name:'血精妖果',qty:1},{name:'雪骨参',qty:3}],pillPower:600,unlockStage:200,sellPrice:15000,description:'七品顶峰丹药，为灵魂体重塑躯体必备。'},
+  {id:'rec_11',name:'天魂融血丹',herbs:[{name:'魂婴果',qty:1},{name:'龙凰血精',qty:1},{name:'菩提子',qty:3}],pillPower:800,unlockStage:205,sellPrice:30000,description:'八品丹药，魔兽后代孕育所需。'},
+  {id:'rec_12',name:'混元塑骨丹',herbs:[{name:'混元草',qty:8},{name:'幽海骨髓',qty:1},{name:'木系魔核(六阶)',qty:1}],pillPower:320,unlockStage:95,sellPrice:4500,description:'六品丹药，治愈魔兽体内暗伤。'},
+];
+
+// ==================== 背包物品数据 ====================
+function generateShopItems(){
+  const items=[
+    {id:'herb_01',name:'凝血草',type:'herb',price:20,permanent:true},
+    {id:'herb_02',name:'活气果',type:'herb',price:30,permanent:true},
+    {id:'herb_03',name:'聚灵草',type:'herb',price:25,permanent:true},
+    {id:'herb_04',name:'紫叶兰草',type:'herb',price:40,permanent:true},
+    {id:'herb_05',name:'洗骨花',type:'herb',price:35,permanent:true},
+    {id:'herb_06',name:'青灵草',type:'herb',price:50,permanent:true},
+    {id:'herb_07',name:'龙血草',type:'herb',price:80,permanent:true},
+    {id:'herb_08',name:'冰灵焰草',type:'herb',price:200,permanent:true},
+    {id:'herb_09',name:'紫灵草',type:'herb',price:100,permanent:true},
+    {id:'herb_10',name:'皇血草',type:'herb',price:150,permanent:true},
+    {id:'herb_11',name:'地心火芝',type:'herb',price:500,permanent:true},
+    {id:'herb_12',name:'龙须冰火果',type:'herb',price:400,permanent:true},
+    {id:'herb_13',name:'青木仙藤',type:'herb',price:350,permanent:true},
+    {id:'herb_14',name:'雪骨参',type:'herb',price:600,permanent:true},
+    {id:'herb_15',name:'万年青灵藤',type:'herb',price:800,permanent:true},
+    {id:'herb_16',name:'血精妖果',type:'herb',price:700,permanent:true},
+    {id:'herb_17',name:'魂婴果',type:'herb',price:5000,permanent:true},
+    {id:'herb_18',name:'菩提子',type:'herb',price:10000,permanent:true},
+    {id:'herb_19',name:'混元草',type:'herb',price:300,permanent:true},
+    {id:'herb_20',name:'冰灵寒泉',type:'herb',price:1000,permanent:true},
+    {id:'core_01',name:'木系魔核(一阶)',type:'core',price:50,permanent:true},
+    {id:'core_02',name:'火系魔核(四阶)',type:'core',price:300,permanent:true},
+    {id:'core_03',name:'水系魔核(六阶)',type:'core',price:2000,permanent:true},
+    {id:'core_04',name:'火系魔核(六阶)',type:'core',price:2500,permanent:true},
+    {id:'core_05',name:'木系魔核(五阶)',type:'core',price:1200,permanent:true},
+    {id:'core_06',name:'幽海骨髓',type:'core',price:3000,permanent:true},
+    {id:'core_07',name:'龙凰血精',type:'core',price:20000,permanent:true},
+    // 随机商品
+    {id:'rand_01',name:'一阶魔核盲盒',type:'core',price:40,permanent:false},
+    {id:'rand_02',name:'三阶魔核盲盒',type:'core',price:120,permanent:false},
+    {id:'rand_03',name:'珍稀药材包',type:'herb',price:250,permanent:false},
+    {id:'rand_04',name:'炼药材料箱',type:'herb',price:500,permanent:false},
+    {id:'rand_05',name:'斗之气丹',type:'pill',price:150,permanent:false},
+    {id:'rand_06',name:'增气散',type:'pill',price:300,permanent:false},
+    {id:'rand_07',name:'回气丹',type:'pill',price:200,permanent:false},
+    {id:'rand_08',name:'复体丹',type:'pill',price:200,permanent:false},
+  ];
+  return items;
+}
+const ALL_ITEMS = generateShopItems();
+
+// ==================== 游戏引擎 ====================
+const SAVE_KEY = 'btth_save';
+let state = null;
+
+function defaultState(){
+  return {
+    gold:1000,currentRegion:0,currentStage:0,clearedStages:{},
+    characters:[],bag:{herbs:{},cores:{},pills:{}},
+    idleType:null,idleTarget:null,idleStartTime:null,idleComplete:false,
+    cultivation:{level:0,startTime:null,completed:false},
+    pitySR:0,pitySSR:0,shopRefreshTime:Date.now(),
+    disabledSSRs:{},xiaoYanCurrentVersion:0
+  };
+}
+
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(raw){state=JSON.parse(raw);return true;}
+  }catch(e){}
+  state=defaultState();
+  // 初始赠送
+  initialGive();
+  return false;
+}
+
+function saveGame(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));return true;}catch(e){return false;}
+}
+
+function initialGive(){
+  // 赠送初始角色
+  const initChars=[
+    {id:'n_0_0',stars:1},{id:'n_0_1',stars:1},{id:'n_0_2',stars:1},
+    {id:'r_0_0',stars:1},{id:'r_0_1',stars:1},
+    {id:'sr_0_0',stars:1}, // 萧战(SR)
+  ];
+  state.characters=initChars;
+  // 初始萧炎
+  const xyChar=ALL_CHARACTERS.find(c=>c.id==='xy_wutan');
+  if(xyChar){state.characters.push({id:'xy_wutan',stars:1,techniques:[null,null]});state.xiaoYanCurrentVersion=0;}
+  // 初始斗技
+  state.techniques=state.techniques||{};
+  state.techniques['t_01']=1; // 八极崩
+  state.techniques['t_04']=1; // 吹火掌
+  // 初始背包
+  state.bag.herbs['凝血草']=(state.bag.herbs['凝血草']||0)+5;
+  state.bag.herbs['活气果']=(state.bag.herbs['活气果']||0)+3;
+}
+
+function getCharData(id){return ALL_CHARACTERS.find(c=>c.id===id);}
+function getOwnedChar(id){return state.characters.find(c=>c.id===id);}
+function getStageData(id){return ALL_STAGES[id];}
+function getTechData(id){return ALL_TECHNIQUES.find(t=>t.id===id);}
+function getRecipeData(id){return ALL_RECIPES.find(r=>r.id===id);}
+
+// 战力计算
+function calcCharPower(charState){
+  const data=getCharData(charState.id);
+  if(!data) return 0;
+  let power=data.basePower;
+  const starBonus=RARITY_STAR_POWER[data.rarity]||12;
+  power=Math.floor(power*(1+(charState.stars-1)*starBonus/100));
+  // 斗技加成
+  if(charState.techniques){
+    charState.techniques.forEach(tid=>{
+      if(!tid) return;
+      const tech=getTechData(tid);
+      if(!tech) return;
+      const level=state.techniques[tid]||1;
+      let techPow=Math.floor(tech.basePower*(1+(level-1)*0.1));
+      if(tech.element===data.element) techPow=Math.floor(techPow*1.0);
+      else techPow=Math.floor(techPow*0.8);
+      power+=techPow;
+    });
+  }
+  // 萧炎修炼加成
+  if(data.isXiaoYan&&state.cultivation.level>0){
+    power+=state.cultivation.level*200;
+  }
+  return power;
+}
+
+function getTotalPower(){
+  // 找出未禁用的最强角色组成战力
+  let total=0;
+  const activeChars=state.characters.filter(c=>{
+    const data=getCharData(c.id);
+    return data&&!(state.disabledSSRs[c.id]);
+  });
+  activeChars.forEach(c=>{total+=calcCharPower(c);});
+  return total;
+}
+
+function getCurrentRegionSSRPool(){
+  return REGION_SSR_POOLS[state.currentRegion]||[];
+}
+
+// ==================== 抽卡引擎 ====================
+function gachaPull(){
+  // 先检查保底
+  let forcedRarity=null;
+  if(state.pitySSR>=PITY_SSR-1) forcedRarity='SSR';
+  else if(state.pitySR>=PITY_SR-1) forcedRarity='SR';
+
+  let rarity;
+  if(forcedRarity){
+    rarity=forcedRarity;
+  }else{
+    const roll=Math.random();
+    if(roll<GACHA_PROBS.SSR) rarity='SSR';
+    else if(roll<GACHA_PROBS.SSR+GACHA_PROBS.SR) rarity='SR';
+    else if(roll<GACHA_PROBS.SSR+GACHA_PROBS.SR+GACHA_PROBS.R) rarity='R';
+    else rarity='N';
+  }
+
+  // 更新保底
+  if(rarity==='SSR'){state.pitySSR=0;state.pitySR=0;}
+  else if(rarity==='SR'){state.pitySSR++;state.pitySR=0;}
+  else{state.pitySSR++;state.pitySR++;}
+
+  // 从卡池选角色
+  let pool;
+  if(rarity==='SSR'){
+    pool=ALL_CHARACTERS.filter(c=>c.rarity==='SSR'&&c.region===state.currentRegion&&!state.disabledSSRs[c.id]);
+    // 萧炎特殊概率：如果萧炎在池中，1%概率出萧炎（vs其他SSR各~2%）
+    const xyInPool=pool.find(c=>c.isXiaoYan);
+    const nonXY=pool.filter(c=>!c.isXiaoYan);
+    if(xyInPool&&nonXY.length>0){
+      if(Math.random()<0.33) pool=[xyInPool]; // 萧炎占SSR的1/3概率
+      else pool=nonXY;
+    }
+    if(pool.length===0) pool=ALL_CHARACTERS.filter(c=>c.rarity==='SSR'&&c.region===state.currentRegion);
+  }else if(rarity==='SR'){
+    pool=ALL_CHARACTERS.filter(c=>c.rarity==='SR'&&c.region===state.currentRegion);
+    if(pool.length===0) pool=ALL_CHARACTERS.filter(c=>c.rarity==='SR');
+  }else if(rarity==='R'){
+    pool=ALL_CHARACTERS.filter(c=>c.rarity==='R'&&(c.region===state.currentRegion||c.region===state.currentRegion-1));
+    if(pool.length===0) pool=ALL_CHARACTERS.filter(c=>c.rarity==='R');
+  }else{
+    pool=ALL_CHARACTERS.filter(c=>c.rarity==='N');
+  }
+  if(pool.length===0) pool=ALL_CHARACTERS.filter(c=>c.rarity===rarity);
+  const chosen=pool[Math.floor(Math.random()*pool.length)];
+  if(!chosen) return gachaPull(); // fallback
+
+  // 处理获得
+  return processCharacterAcquisition(chosen);
+}
+
+function processCharacterAcquisition(chardata){
+  const owned=getOwnedChar(chardata.id);
+  const result={character:chardata,isNew:false,starsUp:false,dupeGold:0};
+  if(owned){
+    if(owned.stars<5){
+      owned.stars++;
+      result.starsUp=true;
+      result.stars=owned.stars;
+    }else{
+      result.dupeGold=RARITY_DUPE_GOLD[chardata.rarity];
+      state.gold+=result.dupeGold;
+    }
+  }else{
+    const newChar={id:chardata.id,stars:1,techniques:[null,null]};
+    // 如果是萧炎卡，自动设为当前版本
+    if(chardata.isXiaoYan){
+      state.xiaoYanCurrentVersion=Math.max(state.xiaoYanCurrentVersion,chardata.regionVersion);
+      // 将之前拥有的萧炎升级到最新版本
+      state.characters.forEach(c=>{
+        const cd=getCharData(c.id);
+        if(cd&&cd.isXiaoYan&&cd.regionVersion<chardata.regionVersion){
+          c.id=chardata.id;
+        }
+      });
+    }
+    state.characters.push(newChar);
+    result.isNew=true;
+    result.stars=1;
+  }
+  return result;
+}
+
+function gachaTenPull(){
+  const results=[];
+  for(let i=0;i<10;i++) results.push(gachaPull());
+  return results;
+}
+
+// ==================== 主线战斗 ====================
+function battleStage(stageId){
+  const stage=getStageData(stageId);
+  if(!stage) return {success:false,msg:'关卡不存在'};
+  if(stage.region!==state.currentRegion) return {success:false,msg:'不在当前区域'};
+  if(state.clearedStages[stageId]) return {success:false,msg:'已通关',cleared:true};
+  const totalPower=getTotalPower();
+  if(totalPower>=stage.powerThreshold){
+    // 通关
+    state.clearedStages[stageId]=true;
+    state.gold+=stage.goldReward;
+    // 首通BOSS/终章触发解锁
+    if(stage.type==='boss'||stage.type==='final'){
+      // 掉落斗技
+      if(stage.type==='final'&&!state.techniques){
+        const regionTechs={
+          0:'t_01',1:'t_02',2:'t_03',3:'t_12',4:'t_06',5:'t_07',6:'t_08',7:'t_10',8:'t_11',9:'t_11'
+        };
+        const techId=regionTechs[stage.region];
+        if(techId&&!state.techniques[techId]){
+          state.techniques[techId]=1;
+          return {success:true,power:totalPower,threshold:stage.powerThreshold,gold:stage.goldReward,newTech:getTechData(techId),stage};
+        }
+      }
+      // 解锁丹方
+      const unlockedRecipes=ALL_RECIPES.filter(r=>r.unlockStage===stageId);
+      if(unlockedRecipes.length>0){
+        return {success:true,power:totalPower,threshold:stage.powerThreshold,gold:stage.goldReward,newRecipes:unlockedRecipes,stage};
+      }
+    }
+    return {success:true,power:totalPower,threshold:stage.powerThreshold,gold:stage.goldReward,stage};
+  }
+  return {success:false,msg:'战力不足！需要'+stage.powerThreshold+'，当前'+totalPower};
+}
+
+// ==================== 区域推进 ====================
+function advanceRegion(){
+  const stagesInRegion=ALL_STAGES.filter(s=>s.region===state.currentRegion);
+  const allCleared=stagesInRegion.every(s=>state.clearedStages[s.id]);
+  if(!allCleared) return {success:false,msg:'请先通关当前区域所有关卡'};
+  if(state.currentRegion>=9) return {success:false,msg:'已到达最终区域'};
+  const oldRegion=state.currentRegion;
+  state.currentRegion++;
+
+  // 萧炎自动进化到新区版本
+  const xyNew=ALL_CHARACTERS.find(c=>c.isXiaoYan&&c.regionVersion===state.currentRegion);
+  if(xyNew){
+    state.characters.forEach(c=>{
+      const cd=getCharData(c.id);
+      if(cd&&cd.isXiaoYan){
+        const oldStars=c.stars;
+        c.id=xyNew.id;
+        // 保留原有星级
+        const owned=getOwnedChar(xyNew.id);
+        if(owned) owned.stars=Math.max(owned.stars,oldStars);
+      }
+    });
+    state.xiaoYanCurrentVersion=state.currentRegion;
+    toast('萧炎自动进化为最新形态: '+xyNew.name);
+  }
+
+  // SSR禁用逻辑：按原著剧情判断
+  // 规则：向前跳过2个区域以上的SSR大概率被禁用
+  const keepIds=new Set();
+  // 始终保留：萧炎、薰儿、药老、美杜莎、小医仙、紫研、彩鳞
+  ALL_CHARACTERS.forEach(cd=>{
+    if(cd.rarity==='SSR'&&cd.region<=state.currentRegion){
+      if(cd.isXiaoYan||cd.id.includes('xuner')||cd.id.includes('yaolao')||cd.id.includes('medusa')||cd.id.includes('xiao_yixian')||cd.id.includes('ziyan')||cd.id.includes('cailin')){
+        keepIds.add(cd.id);
+      }
+    }
+  });
+  // 检查当前区域的SSR池
+  const pool=getCurrentRegionSSRPool();
+  state.characters.forEach(c=>{
+    const data=getCharData(c.id);
+    if(data&&data.rarity==='SSR'&&!data.isXiaoYan){
+      if(!pool.includes(c.id)&&!keepIds.has(c.id)&&!state.disabledSSRs[c.id]){
+        state.disabledSSRs[c.id]=true;
+        const refundGold=c.stars*100*SINGLE_COST;
+        state.gold+=refundGold;
+        toast(data.name+' 被禁用，返还 🪙'+formatNum(refundGold));
+      }
+    }
+  });
+
+  saveGame();
+  return {success:true,newRegion:state.currentRegion};
+}
+
+// ==================== 挂机计算 ====================
+function getIdleProgress(){
+  if(!state.idleType||!state.idleStartTime) return null;
+  const elapsed=(Date.now()-state.idleStartTime)/1000/3600; // 小时
+  const capped=Math.min(elapsed,MAX_IDLE_HOURS);
+  const progress=Math.min(capped/MAX_IDLE_HOURS*100,100);
+  return {elapsed:capped,progress,complete:capped>=MAX_IDLE_HOURS,type:state.idleType,target:state.idleTarget};
+}
+
+function getCultivationProgress(){
+  if(!state.cultivation.startTime) return null;
+  const elapsed=(Date.now()-state.cultivation.startTime)/1000/3600;
+  const capped=Math.min(elapsed,MAX_IDLE_HOURS);
+  return {elapsed:capped,progress:Math.min(capped/MAX_IDLE_HOURS*100,100),complete:capped>=MAX_IDLE_HOURS};
+}
+
+// ==================== 导出导入 ====================
+function exportSave(){
+  const data=JSON.stringify(state,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='btth_save.json';a.click();
+  URL.revokeObjectURL(url);
+  toast('存档已导出');
+}
+
+function importSave(file){
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      state=data;
+      saveGame();
+      toast('存档已导入');
+      refreshAll();
+    }catch(ex){toast('导入失败：文件格式错误');}
+  };
+  reader.readAsText(file);
+}
+
+// ==================== UI工具 ====================
+let currentTab='main';
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('#nav-bar button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.toggle('active',t.id==='tab-'+tab));
+  renderTab(tab);
+}
+
+function toast(msg){
+  const el=document.createElement('div');el.className='toast';el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),2200);
+}
+
+function showModal(title,content){
+  document.getElementById('modal-box').innerHTML='<h3>'+title+'</h3>'+content;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('show');}
+
+function starsHTML(stars){let s='';for(let i=0;i<5;i++)s+=i<stars?'★':'☆';return '<span class="stars">'+s+'</span>';}
+function rarityBadge(r){return '<span class="badge badge-'+r+'">'+r+'</span>';}
+function elementBadge(e){return '<span class="badge badge-'+e+'">'+(ELEMENTS[e]||e)+'</span>';}
+
+function formatNum(n){if(n>=100000000)return (n/100000000).toFixed(1)+'亿';if(n>=10000)return (n/10000).toFixed(1)+'万';return n.toLocaleString();}
+
+function updateTopBar(){
+  document.getElementById('hdr-gold').textContent=formatNum(state.gold);
+  document.getElementById('hdr-power').textContent=formatNum(getTotalPower());
+  document.getElementById('hdr-region').textContent=REGIONS[state.currentRegion];
+  const cleared=Object.keys(state.clearedStages).length;
+  document.getElementById('hdr-stage').textContent=cleared+'/210';
+}
+
+function refreshAll(){
+  updateTopBar();
+  renderTab(currentTab);
+}
+
+// ==================== 各Tab渲染 ====================
+function renderTab(tab){
+  const container=document.getElementById('tab-'+tab);
+  if(!container) return;
+  updateTopBar();
+  switch(tab){
+    case 'main': renderMain(container);break;
+    case 'gacha': renderGacha(container);break;
+    case 'char': renderChar(container);break;
+    case 'bag': renderBag(container);break;
+    case 'idle': renderIdle(container);break;
+    case 'more': renderMore(container);break;
+  }
+}
+
+// --- 主线Tab ---
+let mainView='regions'; // 'regions'|'stages'
+function renderMain(container){
+  if(mainView==='stages'){
+    renderStages(container);
+  }else{
+    renderRegions(container);
+  }
+}
+
+function renderRegions(container){
+  let html='<div class="section-title">选择区域</div><div class="region-list">';
+  for(let i=0;i<10;i++){
+    const locked=i>state.currentRegion+1;
+    const current=i===state.currentRegion;
+    const cleared=i<state.currentRegion||(i===state.currentRegion&&ALL_STAGES.filter(s=>s.region===i).every(s=>state.clearedStages[s.id]));
+    const stageCount=ALL_STAGES.filter(s=>s.region===i).length;
+    const clearedCount=ALL_STAGES.filter(s=>s.region===i&&state.clearedStages[s.id]).length;
+    html+='<div class="region-card'+ (locked?' locked':'')+(current?' current':'')+'" onclick="'+(locked?'':("selectRegion("+i+")"))+'">';
+    html+='<div class="name">'+(cleared&&!current?'✅ ':'')+REGIONS[i]+'</div>';
+    html+='<div class="info">'+clearedCount+'/'+stageCount+'关</div>';
+    html+='</div>';
+  }
+  html+='</div>';
+  if(state.currentRegion<9&&ALL_STAGES.filter(s=>s.region===state.currentRegion).every(s=>state.clearedStages[s.id])){
+    html+='<button class="btn btn-gold btn-block" onclick="advanceToNextRegion()" style="margin-top:12px">▶ 进入下一个区域</button>';
+  }
+  container.innerHTML=html;
+}
+
+function selectRegion(r){
+  if(r>state.currentRegion+1) return;
+  mainView='stages';
+  window._selectedRegion=r;
+  renderTab('main');
+}
+
+function renderStages(container){
+  const r=window._selectedRegion||state.currentRegion;
+  const stages=ALL_STAGES.filter(s=>s.region===r);
+  let html='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">';
+  html+='<button class="btn btn-blue btn-sm" onclick="mainView=\'regions\';renderTab(\'main\')">◀ 返回</button>';
+  html+='<span class="section-title" style="margin:0">'+REGIONS[r]+'</span></div>';
+  html+='<div style="font-size:12px;color:var(--text2);margin-bottom:8px">总战力: <b style="color:var(--gold)">'+formatNum(getTotalPower())+'</b></div>';
+  stages.forEach(s=>{
+    const cleared=state.clearedStages[s.id];
+    const locked=s.id>0&&!state.clearedStages[s.id-1]&&s.stageNumber>1;
+    const typeLabel=s.type==='final'?'🔴':s.type==='boss'?'🟡':'⚪';
+    html+='<div class="stage-item '+s.type+(cleared?' cleared':'')+(locked?' locked':'')+'" onclick="'+(locked||cleared?'':("tryStage("+s.id+")"))+'">';
+    html+='<div><b>'+typeLabel+' '+s.name+'</b><br><small style="color:var(--text2)">战力阈值: '+formatNum(s.powerThreshold)+' | 🪙'+s.goldReward+'</small></div>';
+    html+='<div style="text-align:right">'+(cleared?'<span style="color:var(--success)">已通关</span>':'')+'</div></div>';
+  });
+  // 前区按钮
+  if(r===state.currentRegion&&ALL_STAGES.filter(s=>s.region===r).every(s=>state.clearedStages[s.id])&&state.currentRegion<9){
+    html+='<button class="btn btn-gold btn-block" onclick="advanceToNextRegion()" style="margin-top:8px">▶ 进入下一个区域</button>';
+  }
+  container.innerHTML=html;
+}
+
+function tryStage(stageId){
+  const result=battleStage(stageId);
+  if(result.success){
+    let msg='✅ 通关成功！\n战力: '+formatNum(result.power)+' vs 阈值: '+formatNum(result.threshold)+'\n获得 🪙'+result.goldReward;
+    if(result.newTech) msg+='\n🎉 获得新斗技: 【'+result.newTech.name+'】('+result.newTech.grade+')';
+    if(result.newRecipes) result.newRecipes.forEach(r=>msg+='\n📜 解锁丹方: 【'+r.name+'】');
+    toast(msg.replace(/\n/g,' | '));
+    saveGame();
+    refreshAll();
+  }else if(result.cleared){
+    toast('该关已通关');
+  }else{
+    toast(result.msg);
+  }
+}
+
+function advanceToNextRegion(){
+  const result=advanceRegion();
+  if(result.success){
+    toast('进入新区域: '+REGIONS[state.currentRegion]+'！');
+    saveGame();
+    mainView='regions';
+    refreshAll();
+  }else{
+    toast(result.msg);
+  }
+}
+
+// --- 抽卡Tab ---
+let lastGachaResult=null;
+function renderGacha(container){
+  const pool=getCurrentRegionSSRPool();
+  const ssrCount=pool.length;
+  const ownedSSRs=state.characters.filter(c=>{
+    const data=getCharData(c.id);
+    return data&&data.rarity==='SSR'&&data.region===state.currentRegion&&!state.disabledSSRs[c.id];
+  }).length;
+  let html='<div class="card">';
+  html+='<div class="card-header">🎴 抽卡 <span style="font-size:12px;color:var(--text2)">当前区域: '+REGIONS[state.currentRegion]+'</span></div>';
+  html+='<p style="font-size:12px;color:var(--text2)">SSR池: '+ssrCount+'张 | 已拥有: '+ownedSSRs+'张</p>';
+  html+='<p style="font-size:11px;color:var(--text2)">SR保底: '+state.pitySR+'/'+PITY_SR+' | SSR保底: '+state.pitySSR+'/'+PITY_SSR+'</p>';
+  html+='<div style="text-align:center;margin:12px 0">';
+  html+='<button class="btn btn-gold" onclick="doSinglePull()" style="margin:4px">单抽 🪙'+SINGLE_COST+'</button>';
+  html+='<button class="btn btn-gold" onclick="doTenPull()" style="margin:4px">十连 🪙'+TEN_COST+' (9折)</button>';
+  html+='</div>';
+  html+='<p style="font-size:10px;color:var(--text2);text-align:center">N:50% R:38% SR:10% SSR:2%</p>';
+  html+='</div>';
+  // 卡池一览
+  html+='<div class="card"><div class="card-header">📋 当前卡池</div>';
+  html+='<div class="ssr-gallery">';
+  pool.forEach(cid=>{
+    const cdata=getCharData(cid);
+    if(!cdata) return;
+    const owned=getOwnedChar(cid);
+    html+='<div class="ssr-item'+(owned?' owned':' unowned')+'">';
+    html+='<div class="rarity-SSR" style="font-size:12px;font-weight:bold">'+cdata.name+'</div>';
+    html+='<div style="font-size:10px">'+elementBadge(cdata.element)+' ⚔'+formatNum(cdata.basePower)+'</div>';
+    html+='<div style="font-size:10px">'+(owned?starsHTML(owned.stars):'未拥有')+'</div>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+  // 上次抽卡结果
+  if(lastGachaResult){
+    html+='<div class="card"><div class="card-header">📊 上次抽卡结果</div>';
+    lastGachaResult.forEach(r=>{
+      html+='<div class="gacha-result"><span class="rarity-'+r.character.rarity+'">'+rarityBadge(r.character.rarity)+' '+r.character.name+'</span>';
+      if(r.isNew) html+=' <span style="color:var(--success)">NEW!</span>';
+      else if(r.starsUp) html+=' '+starsHTML(r.stars);
+      if(r.dupeGold>0) html+=' <span style="color:var(--gold)">+'+r.dupeGold+'🪙</span>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  container.innerHTML=html;
+}
+
+function doSinglePull(){
+  if(state.gold<SINGLE_COST){toast('金币不足！');return;}
+  state.gold-=SINGLE_COST;
+  const result=gachaPull();
+  lastGachaResult=[result];
+  saveGame();
+  refreshAll();
+  // 弹窗
+  let content='<div class="gacha-result">';
+  content+='<div class="name rarity-'+result.character.rarity+'">'+rarityBadge(result.character.rarity)+' '+result.character.name+'</div>';
+  if(result.isNew) content+='<p style="color:var(--success);font-size:16px">🎉 新角色获得！</p>';
+  else if(result.starsUp) content+='<p>'+starsHTML(result.stars)+'</p>';
+  if(result.dupeGold>0) content+='<p style="color:var(--gold)">满星返还: +'+result.dupeGold+'🪙</p>';
+  content+='<p style="font-size:12px;color:var(--text2)">'+elementBadge(result.character.element)+' ⚔基础战力: '+formatNum(result.character.basePower)+'</p>';
+  content+='<p style="font-size:11px;color:var(--text2)">'+(result.character.description||'')+'</p>';
+  content+='<button class="btn btn-gold btn-block" onclick="closeModal()">确定</button></div>';
+  showModal('抽卡结果',content);
+}
+
+function doTenPull(){
+  if(state.gold<TEN_COST){toast('金币不足！');return;}
+  state.gold-=TEN_COST;
+  const results=gachaTenPull();
+  lastGachaResult=results;
+  saveGame();
+  refreshAll();
+  let content='<div style="max-height:300px;overflow-y:auto">';
+  results.forEach(r=>{
+    content+='<div class="gacha-result" style="border-bottom:1px solid var(--bg3);padding:4px">';
+    content+='<span class="rarity-'+r.character.rarity+'">'+rarityBadge(r.character.rarity)+' <b>'+r.character.name+'</b></span>';
+    if(r.isNew) content+=' <span style="color:var(--success)">NEW!</span>';
+    else if(r.starsUp) content+=' '+starsHTML(r.stars);
+    if(r.dupeGold>0) content+=' <span style="color:var(--gold)">+'+r.dupeGold+'🪙</span>';
+    content+='</div>';
+  });
+  content+='</div><button class="btn btn-gold btn-block" onclick="closeModal()">确定</button>';
+  showModal('十连抽结果',content);
+}
+
+// --- 角色Tab ---
+let charDetailId=null;
+function renderChar(container){
+  if(charDetailId){
+    renderCharDetail(container);
+    return;
+  }
+  const chars=[...state.characters].sort((a,b)=>{
+    const ad=getCharData(a.id),bd=getCharData(b.id);
+    if(!ad||!bd) return 0;
+    const rarityOrder={SSR:4,SR:3,R:2,N:1};
+    return (rarityOrder[bd.rarity]||0)-(rarityOrder[ad.rarity]||0);
+  });
+  let html='<div class="section-title">已拥有角色 ('+chars.length+')</div>';
+  html+='<div class="char-grid">';
+  chars.forEach(c=>{
+    const data=getCharData(c.id);
+    if(!data) return;
+    const disabled=state.disabledSSRs[c.id];
+    const power=calcCharPower(c);
+    html+='<div class="char-card'+(disabled?' disabled':'')+'" onclick="viewCharDetail(\''+c.id+'\')">';
+    html+='<div class="cname rarity-'+data.rarity+'">'+rarityBadge(data.rarity)+' '+data.name+'</div>';
+    html+='<div class="cinfo">'+elementBadge(data.element)+' ⚔'+formatNum(power)+'</div>';
+    html+='<div class="cinfo">'+starsHTML(c.stars);
+    if(disabled) html+=' <span style="color:var(--danger)">已禁用</span>';
+    html+='</div></div>';
+  });
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+function viewCharDetail(cid){
+  charDetailId=cid;
+  renderTab('char');
+}
+
+function renderCharDetail(container){
+  const owned=getOwnedChar(charDetailId);
+  const data=getCharData(charDetailId);
+  if(!data||!owned){
+    charDetailId=null;renderChar(container);return;
+  }
+  const power=calcCharPower(owned);
+  const disabled=state.disabledSSRs[charDetailId];
+  let html='<button class="btn btn-blue btn-sm" onclick="charDetailId=null;renderTab(\'char\')">◀ 返回</button>';
+  html+='<div class="card char-detail">';
+  html+='<h2 class="rarity-'+data.rarity+'">'+rarityBadge(data.rarity)+' '+data.name+'</h2>';
+  html+='<p>'+elementBadge(data.element)+' ⚔战力: <b style="color:var(--gold)">'+formatNum(power)+'</b> (基础: '+formatNum(data.basePower)+')</p>';
+  html+='<p>星级: '+starsHTML(owned.stars)+' | 每星+'+RARITY_STAR_POWER[data.rarity]+'%</p>';
+  if(disabled) html+='<p style="color:var(--danger)">⚠️ 此角色已被禁用，不可出战</p>';
+  if(data.isXiaoYan) html+='<p>🔥 主角萧炎 (当前形态: '+REGIONS[state.xiaoYanCurrentVersion]+') | 修炼等级: '+state.cultivation.level+'</p>';
+  if(data.description) html+='<p style="color:var(--text2);font-size:12px">'+data.description+'</p>';
+  html+='</div>';
+  // 斗技装备
+  html+='<div class="card"><div class="card-header">已装备斗技</div>';
+  for(let i=0;i<2;i++){
+    const tid=owned.techniques[i];
+    if(tid){
+      const tech=getTechData(tid);
+      const level=state.techniques[tid]||1;
+      const match=tech&&tech.element===data.element;
+      html+='<div class="technique-slot equipped" onclick="unequipTech('+i+')">';
+      html+='<span>'+tech.name+' <small>Lv'+level+'</small> '+elementBadge(tech.element)+'</span>';
+      html+='<span style="font-size:10px;color:'+(match?'var(--success)':'var(--text2)')+'">'+(match?'匹配100%':'不匹配80%')+'</span>';
+      html+='</div>';
+    }else{
+      html+='<div class="technique-slot" onclick="equipTech('+i+')"><span style="color:var(--text2)">空槽位 - 点击装备</span></div>';
+    }
+  }
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+function equipTech(slot){
+  const owned=getOwnedChar(charDetailId);
+  if(!owned) return;
+  const data=getCharData(charDetailId);
+  if(!data) return;
+  const ownedTechs=Object.keys(state.techniques||{}).filter(tid=>state.techniques[tid]>0);
+  if(ownedTechs.length===0){toast('没有可装备的斗技');return;}
+  let content='<div style="max-height:300px;overflow-y:auto">';
+  ownedTechs.forEach(tid=>{
+    const tech=getTechData(tid);
+    if(!tech) return;
+    const match=tech.element===data.element;
+    content+='<div class="technique-slot" onclick="doEquipTech(\''+tid+'\','+slot+')" style="cursor:pointer">';
+    content+='<span>'+tech.name+' <small>'+tech.grade+'</small> '+elementBadge(tech.element)+'</span>';
+    content+='<span style="font-size:10px;color:'+(match?'var(--success)':'var(--text2)')+'">Lv'+(state.techniques[tid]||1)+' '+(match?'匹配':'不匹配')+'</span>';
+    content+='</div>';
+  });
+  content+='</div>';
+  showModal('装备斗技 (槽位'+(slot+1)+')',content);
+}
+
+function doEquipTech(tid,slot){
+  const owned=getOwnedChar(charDetailId);
+  if(!owned) return;
+  owned.techniques[slot]=tid;
+  closeModal();
+  saveGame();
+  refreshAll();
+}
+
+function unequipTech(slot){
+  const owned=getOwnedChar(charDetailId);
+  if(!owned) return;
+  owned.techniques[slot]=null;
+  saveGame();
+  refreshAll();
+}
+
+// --- 背包Tab ---
+let bagTab='herbs';
+function renderBag(container){
+  let html='<div class="bag-tabs">';
+  html+='<button class="'+(bagTab==='herbs'?'active':'')+'" onclick="bagTab=\'herbs\';renderTab(\'bag\')">🌿 药材</button>';
+  html+='<button class="'+(bagTab==='cores'?'active':'')+'" onclick="bagTab=\'cores\';renderTab(\'bag\')">💎 魔核</button>';
+  html+='<button class="'+(bagTab==='pills'?'active':'')+'" onclick="bagTab=\'pills\';renderTab(\'bag\')">💊 丹药</button>';
+  html+='</div>';
+  const items=state.bag[bagTab];
+  const keys=Object.keys(items).filter(k=>items[k]>0);
+  if(keys.length===0){
+    html+='<div class="empty-state"><div class="icon">🎒</div><p>背包为空</p></div>';
+  }else{
+    html+='<div style="margin-top:8px">';
+    keys.forEach(k=>{
+      const qty=items[k];
+      const itemData=ALL_ITEMS.find(i=>i.name===k&&i.type===bagTab.slice(0,-1));
+      const price=itemData?itemData.price:(bagTab==='herbs'?20:bagTab==='cores'?50:100);
+      html+='<div class="card" style="display:flex;justify-content:space-between;align-items:center">';
+      html+='<div><b>'+k+'</b> ×'+qty+'<br><small style="color:var(--text2)">售:🪙'+price+'/个</small></div>';
+      html+='<div><input type="number" id="sell_'+k.replace(/[^a-zA-Z0-9一-龥]/g,'')+'" value="'+qty+'" min="1" max="'+qty+'" style="width:50px">';
+      html+=' <button class="btn btn-danger btn-sm" onclick="sellItem(\''+bagTab+'\',\''+k+'\')">出售</button></div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  container.innerHTML=html;
+}
+
+function sellItem(type,name){
+  const qtyInput=document.getElementById('sell_'+name.replace(/[^a-zA-Z0-9一-龥]/g,''));
+  const qty=parseInt(qtyInput?.value)||0;
+  if(qty<=0||!state.bag[type][name]||state.bag[type][name]<qty) return;
+  const itemData=ALL_ITEMS.find(i=>i.name===name);
+  const price=itemData?itemData.price:20;
+  state.bag[type][name]-=qty;
+  if(state.bag[type][name]<=0) delete state.bag[type][name];
+  state.gold+=price*qty;
+  toast('出售 '+name+' ×'+qty+' 获得 🪙'+formatNum(price*qty));
+  saveGame();
+  refreshAll();
+}
+
+// --- 挂机Tab ---
+function renderIdle(container){
+  let html='';
+  const idleProgress=getIdleProgress();
+  // 斗技升级 / 炼丹挂机
+  html+='<div class="card"><div class="card-header">⏳ 挂机 (斗技/炼丹 二选一)</div>';
+  if(idleProgress&&idleProgress.type){
+    const targetLabel=idleProgress.type==='technique'?
+      '升级斗技: '+(getTechData(idleProgress.target)?.name||idleProgress.target):
+      '炼制: '+(getRecipeData(idleProgress.target)?.name||idleProgress.target);
+    html+='<p>当前挂机: <b>'+targetLabel+'</b></p>';
+    html+='<p>已挂机: '+idleProgress.elapsed.toFixed(1)+' 小时 / '+MAX_IDLE_HOURS+'小时</p>';
+    html+='<div class="progress-bar"><div class="progress-fill progress-gold" style="width:'+idleProgress.progress+'%"></div></div>';
+    if(idleProgress.complete){
+      html+='<p style="color:var(--success)">✅ 挂机完成！</p>';
+      html+='<button class="btn btn-gold btn-block" onclick="claimIdle()">领取奖励</button>';
+    }else{
+      html+='<button class="btn btn-danger btn-sm" onclick="cancelIdle()">取消挂机</button>';
+    }
+  }else{
+    html+='<p style="color:var(--text2)">选择挂机类型：</p>';
+    html+='<button class="btn btn-blue btn-block" onclick="startTechIdle()">⚔️ 升级斗技</button>';
+    html+='<button class="btn btn-blue btn-block" onclick="startPillIdle()">💊 炼制丹药</button>';
+  }
+  html+='</div>';
+  // 萧炎修炼
+  const cultProgress=getCultivationProgress();
+  html+='<div class="card"><div class="card-header">🔥 萧炎修炼 (独立槽位)</div>';
+  if(cultProgress){
+    html+='<p>修炼等级: <b>'+state.cultivation.level+'</b></p>';
+    html+='<p>已修炼: '+cultProgress.elapsed.toFixed(1)+' 小时 / '+MAX_IDLE_HOURS+'小时</p>';
+    html+='<div class="progress-bar"><div class="progress-fill progress-gold" style="width:'+cultProgress.progress+'%"></div></div>';
+    if(cultProgress.complete){
+      html+='<p style="color:var(--success)">✅ 修炼完成！</p>';
+      html+='<button class="btn btn-gold btn-block" onclick="claimCultivation()">突破</button>';
+    }
+  }else{
+    html+='<p style="color:var(--text2)">萧炎修炼等级: <b>'+state.cultivation.level+'</b> (+'+state.cultivation.level*200+'战力)</p>';
+    html+='<button class="btn btn-gold btn-block" onclick="startCultivation()">开始修炼</button>';
+  }
+  html+='</div>';
+  // 已拥有斗技
+  html+='<div class="card"><div class="card-header">📜 已拥有斗技</div>';
+  const ownedTechs=Object.entries(state.techniques||{}).filter(([k,v])=>v>0);
+  if(ownedTechs.length===0){
+    html+='<p style="color:var(--text2)">暂无斗技</p>';
+  }else{
+    ownedTechs.forEach(([tid,level])=>{
+      const tech=getTechData(tid);
+      if(!tech) return;
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bg3)">';
+      html+='<span>'+tech.name+' <small>'+tech.grade+'</small> '+elementBadge(tech.element)+'</span>';
+      html+='<span>Lv'+level+' ⚔'+formatNum(Math.floor(tech.basePower*(1+(level-1)*0.1)))+'</span>';
+      html+='</div>';
+    });
+  }
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+function startTechIdle(){
+  const ownedTechs=Object.entries(state.techniques||{}).filter(([k,v])=>v>0);
+  if(ownedTechs.length===0){toast('没有可升级的斗技');return;}
+  let content='<div style="max-height:300px;overflow-y:auto">';
+  ownedTechs.forEach(([tid,level])=>{
+    const tech=getTechData(tid);
+    if(!tech) return;
+    content+='<div class="technique-slot" onclick="doStartTechIdle(\''+tid+'\')" style="cursor:pointer">';
+    content+=tech.name+' Lv'+level+' → Lv'+(level+1)+' '+elementBadge(tech.element);
+    content+='</div>';
+  });
+  content+='</div>';
+  showModal('选择要升级的斗技',content);
+}
+
+function doStartTechIdle(tid){
+  state.idleType='technique';
+  state.idleTarget=tid;
+  state.idleStartTime=Date.now();
+  state.idleComplete=false;
+  closeModal();
+  saveGame();
+  refreshAll();
+}
+
+function startPillIdle(){
+  const unlocked=ALL_RECIPES.filter(r=>r.unlockStage<=Object.keys(state.clearedStages).length);
+  if(unlocked.length===0){toast('没有已解锁的丹方');return;}
+  let content='<div style="max-height:300px;overflow-y:auto">';
+  unlocked.forEach(r=>{
+    const canCraft=r.herbs.every(h=>(state.bag.herbs[h.name]||0)>=h.qty);
+    content+='<div class="technique-slot" onclick="doStartPillIdle(\''+r.id+'\')" style="cursor:pointer;'+(canCraft?'':'opacity:.5')+'">';
+    content+=r.name+' <small>'+r.herbs.map(h=>h.name+'×'+h.qty).join('+')+'</small>';
+    content+=canCraft?' <span style="color:var(--success)">可炼制</span>':' <span style="color:var(--danger)">材料不足</span>';
+    content+='</div>';
+  });
+  content+='</div>';
+  showModal('选择要炼制的丹药',content);
+}
+
+function doStartPillIdle(rid){
+  const recipe=getRecipeData(rid);
+  if(!recipe) return;
+  const canCraft=recipe.herbs.every(h=>(state.bag.herbs[h.name]||0)>=h.qty);
+  if(!canCraft){toast('药材不足！');return;}
+  recipe.herbs.forEach(h=>{state.bag.herbs[h.name]-=h.qty;if(state.bag.herbs[h.name]<=0) delete state.bag.herbs[h.name];});
+  state.idleType='pill';
+  state.idleTarget=rid;
+  state.idleStartTime=Date.now();
+  state.idleComplete=false;
+  closeModal();
+  saveGame();
+  refreshAll();
+}
+
+function claimIdle(){
+  if(state.idleType==='technique'){
+    const tid=state.idleTarget;
+    state.techniques[tid]=(state.techniques[tid]||1)+1;
+    toast('斗技升级成功！');
+  }else if(state.idleType==='pill'){
+    const recipe=getRecipeData(state.idleTarget);
+    if(recipe){
+      state.bag.pills[recipe.name]=(state.bag.pills[recipe.name]||0)+1;
+      toast('炼制完成: '+recipe.name+'×1');
+    }
+  }
+  state.idleType=null;state.idleTarget=null;state.idleStartTime=null;state.idleComplete=false;
+  saveGame();refreshAll();
+}
+
+function cancelIdle(){
+  if(state.idleType==='pill'){
+    const recipe=getRecipeData(state.idleTarget);
+    if(recipe) recipe.herbs.forEach(h=>{state.bag.herbs[h.name]=(state.bag.herbs[h.name]||0)+h.qty;});
+  }
+  state.idleType=null;state.idleTarget=null;state.idleStartTime=null;state.idleComplete=false;
+  saveGame();refreshAll();
+  toast('已取消挂机');
+}
+
+function startCultivation(){
+  state.cultivation.startTime=Date.now();
+  state.cultivation.completed=false;
+  saveGame();refreshAll();
+}
+
+function claimCultivation(){
+  state.cultivation.level++;
+  state.cultivation.startTime=null;
+  state.cultivation.completed=false;
+  toast('萧炎修炼突破！等级 '+state.cultivation.level);
+  saveGame();refreshAll();
+}
+
+// --- 更多Tab ---
+let morePage='main';
+function renderMore(container){
+  let html='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+  ['main','gallery','shop','save'].forEach(p=>{
+    html+='<button class="btn '+(morePage===p?'btn-gold':'btn-blue')+' btn-sm" onclick="morePage=\''+p+'\';renderTab(\'more\')">'+{main:'🔥修炼',gallery:'📖SSR图鉴',shop:'🛒商店',save:'💾存档'}[p]+'</button>';
+  });
+  html+='</div>';
+  if(morePage==='main') renderCultivationInfo(html,container);
+  else if(morePage==='gallery') renderSSRGallery(html,container);
+  else if(morePage==='shop') renderShop(html,container);
+  else renderSavePanel(html,container);
+}
+
+function renderCultivationInfo(html,container){
+  html+='<div class="card"><div class="card-header">🔥 萧炎修炼</div>';
+  html+='<p>修炼等级: <b>'+state.cultivation.level+'</b> (战力 +'+state.cultivation.level*200+')</p>';
+  html+='<p>修炼独立于挂机槽，不影响斗技升级和炼丹</p>';
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+function renderSSRGallery(html,container){
+  html+='<div class="section-title">SSR图鉴 ('+ALL_CHARACTERS.filter(c=>c.rarity==='SSR').length+'张)</div>';
+  for(let r=0;r<10;r++){
+    const ssrs=ALL_CHARACTERS.filter(c=>c.rarity==='SSR'&&c.region===r);
+    if(ssrs.length===0) continue;
+    html+='<div style="margin-bottom:8px"><b>'+REGIONS[r]+'</b></div>';
+    html+='<div class="ssr-gallery" style="margin-bottom:12px">';
+    ssrs.forEach(c=>{
+      const owned=getOwnedChar(c.id);
+      const disabled=state.disabledSSRs[c.id];
+      html+='<div class="ssr-item'+(owned?' owned':' unowned')+(disabled?' disabled':'')+'">';
+      html+='<div class="rarity-SSR" style="font-size:11px;font-weight:bold">'+c.name+'</div>';
+      html+='<div style="font-size:10px">'+elementBadge(c.element)+' ⚔'+formatNum(c.basePower)+'</div>';
+      html+='<div style="font-size:10px">'+(owned?starsHTML(owned.stars)+(disabled?'<span style="color:var(--danger)">禁用</span>':''):'未拥有')+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  container.innerHTML=html;
+}
+
+function renderShop(html,container){
+  html+='<div class="card"><div class="card-header">🛒 商店</div>';
+  const permanent=ALL_ITEMS.filter(i=>i.permanent);
+  html+='<div style="margin-bottom:8px"><b>常驻商品</b></div>';
+  html+='<div class="shop-grid">';
+  permanent.forEach(item=>{
+    html+='<div class="shop-item">';
+    html+='<div><b>'+item.name+'</b></div>';
+    html+='<div style="font-size:10px">'+(item.type==='herb'?'🌿':item.type==='core'?'💎':'💊')+' 🪙'+item.price+'</div>';
+    html+='<button class="btn btn-gold btn-sm" onclick="buyItem(\''+item.id+'\')" style="margin-top:4px">购买</button>';
+    html+='</div>';
+  });
+  html+='</div>';
+  const randomItems=ALL_ITEMS.filter(i=>!i.permanent);
+  html+='<div style="margin:12px 0 8px"><b>随机商品</b> <small style="color:var(--text2)">(每小时刷新)</small></div>';
+  html+='<div class="shop-grid">';
+  randomItems.forEach(item=>{
+    html+='<div class="shop-item">';
+    html+='<div><b>'+item.name+'</b></div>';
+    html+='<div style="font-size:10px">🪙'+item.price+'</div>';
+    html+='<button class="btn btn-gold btn-sm" onclick="buyItem(\''+item.id+'\')" style="margin-top:4px">购买</button>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+  container.innerHTML=html;
+}
+
+function buyItem(itemId){
+  const item=ALL_ITEMS.find(i=>i.id===itemId);
+  if(!item) return;
+  if(state.gold<item.price){toast('金币不足！');return;}
+  state.gold-=item.price;
+  const bagKey=item.type==='herb'?'herbs':item.type==='core'?'cores':'pills';
+  state.bag[bagKey][item.name]=(state.bag[bagKey][item.name]||0)+1;
+  toast('购买 '+item.name);
+  saveGame();refreshAll();
+}
+
+function renderSavePanel(html,container){
+  html+='<div class="card"><div class="card-header">💾 存档管理</div>';
+  html+='<button class="btn btn-gold btn-block" onclick="saveGame();toast(\'已保存\')">💾 手动保存</button>';
+  html+='<button class="btn btn-blue btn-block" onclick="exportSave()">📤 导出存档</button>';
+  html+='<button class="btn btn-blue btn-block" onclick="document.getElementById(\'importFile\').click()">📥 导入存档</button>';
+  html+='<input type="file" id="importFile" accept=".json" style="display:none" onchange="importSave(this.files[0])">';
+  html+='<button class="btn btn-danger btn-block" onclick="if(confirm(\'确定重置所有数据？此操作不可撤销！\')){state=defaultState();initialGive();saveGame();refreshAll();toast(\'已重置\')}">🗑️ 重置存档</button>';
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+// ==================== 初始化 ====================
+function init(){
+  loadGame();
+  // 导航事件
+  document.querySelectorAll('#nav-bar button').forEach(btn=>{
+    btn.addEventListener('click',function(){switchTab(this.dataset.tab);});
+  });
+  // 初始渲染
+  updateTopBar();
+  switchTab('main');
+  // 定时刷新挂机显示
+  setInterval(()=>{
+    if(currentTab==='idle') renderTab('idle');
+  },5000);
+}
+
+document.addEventListener('DOMContentLoaded',init);
+
